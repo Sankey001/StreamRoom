@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-theme="heritage">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' blob: mediastream:; connect-src 'self' ws: wss: http: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>StreamRoom</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b1813'/><circle cx='50' cy='50' r='34' fill='none' stroke='%23c9a961' stroke-width='5'/><circle cx='50' cy='50' r='12' fill='%23c9a961'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section id="home">
+    <header class="band">
+      <div class="medallion big" aria-hidden="true">SR</div>
+      <div>
+        <div class="wordmark">StreamRoom</div>
+        <div class="tagline">Calls and 1080p60 screen sharing, for up to ten friends</div>
+      </div>
+    </header>
+
+    <div class="home-body">
+      <div class="panel">
+        <div class="panel-head"><span class="numeral">I</span><h2>You</h2><span class="hint-italic">How your friends will see and hear you</span></div>
+        <div class="preview-wrap">
+          <video id="preview" autoplay playsinline muted></video>
+          <div id="previewEmpty">Camera off</div>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="lobbyMic" checked><span>Microphone</span></label>
+          <label class="check"><input type="checkbox" id="lobbyCam" checked><span>Camera</span></label>
+        </div>
+        <label class="field">Your name <input id="name" maxlength="32" placeholder="e.g. Sanket" autocomplete="nickname"></label>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="numeral">II</span><h2>Meeting</h2><span class="hint-italic">Start one, or join with an ID</span></div>
+
+        <button id="startBtn" class="btn gold big" type="button">Start a meeting</button>
+
+        <div class="or"><span>or join a friend</span></div>
+
+        <form id="joinForm" class="join-row">
+          <input id="codeInput" maxlength="7" placeholder="Meeting ID, e.g. K7P-2QX" autocomplete="off" spellcheck="false" aria-label="Meeting ID">
+          <button id="joinBtn" class="btn gold" type="submit">Join</button>
+        </form>
+
+        <label class="field" id="passwordField">Server password (only if the server has one)
+          <input id="passwordInput" type="password" maxlength="64" autocomplete="off">
+        </label>
+
+        <details id="vpnHelp">
+          <summary>Joining from another network?</summary>
+          <p class="hint">Same Wi-Fi as the host? You only need the meeting ID. Otherwise, both of you join the same free VPN (Radmin VPN or Tailscale), and you type the host's VPN address here. It's in the invite they copied.</p>
+          <label class="field">Host address <input id="addressInput" maxlength="21" placeholder="e.g. 100.101.102.103" autocomplete="off" spellcheck="false"></label>
+        </details>
+
+        <details>
+          <summary>Devices &amp; quality</summary>
+          <label class="field">Camera <select id="camDevice"></select></label>
+          <label class="field">Microphone <select id="micDevice"></select></label>
+          <label class="field">Camera quality
+            <select id="camPreset">
+              <option value="1080p60">Up to 1080p · 60 fps (auto-adjusts)</option>
+              <option value="720p30">Up to 720p · 30 fps (data saver)</option>
+            </select>
+          </label>
+          <label class="field">Screen share
+            <select id="screenPreset">
+              <option value="1080p60">1080p · 60 fps · smooth (games, video)</option>
+              <option value="1440p60">1440p · 60 fps · smooth (needs fast network)</option>
+              <option value="1080p30">1080p · 30 fps · sharp text (code, docs)</option>
+            </select>
+          </label>
+          <label class="field">Screen codec
+            <select id="codec">
+              <option value="auto">Auto (H.264, usually hardware-encoded)</option>
+              <option value="VP9">VP9 (best quality per bit, more CPU)</option>
+              <option value="VP8">VP8 (most compatible)</option>
+            </select>
+          </label>
+        </details>
+
+        <p id="homeStatus" class="status" aria-live="polite"></p>
+        <p id="homeError" class="error" role="alert"></p>
+      </div>
+    </div>
+
+    <footer class="home-foot">
+      <span>Up to 10 people · audio and video encrypted</span>
+      <div class="themes" role="radiogroup" aria-label="Theme">
+        <span class="label">Theme</span>
+        <button class="swatch" data-theme-pick="heritage" title="Heritage green" role="radio"></button>
+        <button class="swatch" data-theme-pick="midnight" title="Midnight navy" role="radio"></button>
+        <button class="swatch" data-theme-pick="bordeaux" title="Bordeaux" role="radio"></button>
+        <button class="swatch" data-theme-pick="ivory" title="Ivory" role="radio"></button>
+      </div>
+    </footer>
+  </section>
+
+  <section id="connecting" hidden aria-live="polite">
+    <div class="conn-card">
+      <div class="orbit" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <circle class="track" cx="60" cy="60" r="54"/>
+          <circle class="arc" cx="60" cy="60" r="54"/>
+        </svg>
+        <div class="medallion">SR</div>
+      </div>
+      <div id="connTitle" class="conn-title">Joining</div>
+      <div id="connCode" class="conn-code"></div>
+      <p id="connSub" class="conn-sub"></p>
+      <ol id="connSteps" class="steps"></ol>
+      <button id="connCancel" class="btn ghost" type="button">Cancel</button>
+    </div>
+  </section>
+
+  <section id="call" hidden>
+    <header class="topbar">
+      <div class="brand"><span class="medallion small" aria-hidden="true">SR</span><span class="wordmark small">StreamRoom</span></div>
+      <div class="meeting">
+        <span class="caps-label">Meeting ID</span>
+        <strong id="meetingId"></strong>
+        <button id="copyIdBtn" class="btn ghost slim" title="Copy an invite to send to friends">Copy invite</button>
+        <span id="hostBadge" class="pill" hidden>You're hosting</span>
+      </div>
+      <div class="right">
+        <span id="quality" class="pill quality">Auto</span>
+        <span id="count" class="caps-label">1/10</span>
+      </div>
+    </header>
+    <div id="banner" class="banner" role="status" hidden></div>
+
+    <div class="body">
+      <main id="view">
+        <div id="stage"></div>
+        <div id="grid"></div>
+      </main>
+      <aside id="chat" hidden>
+        <div class="chat-head"><span class="numeral small">✉</span><h2>Chat</h2></div>
+        <div id="messages"></div>
+        <form id="chatForm">
+          <input id="chatInput" maxlength="1000" placeholder="Message everyone" autocomplete="off">
+          <button type="submit" class="btn gold slim">Send</button>
+        </form>
+      </aside>
+    </div>
+
+    <footer class="controls">
+      <button id="micBtn" class="ctl" title="Mute (M)"><span class="ico">🎙️</span></button>
+      <button id="camBtn" class="ctl" title="Camera (V)"><span class="ico">📷</span></button>
+      <button id="screenBtn" class="ctl wide"><span class="ico">🖥️</span><span class="txt">Share screen</span></button>
+      <button id="statsBtn" class="ctl" title="Show resolution / fps / bitrate"><span class="ico">📊</span></button>
+      <button id="chatBtn" class="ctl" title="Chat"><span class="ico">💬</span><span id="unread" class="badge" hidden>0</span></button>
+      <button id="leaveBtn" class="ctl leave" title="Leave"><span class="ico">📞</span></button>
+    </footer>
+  </section>
+
+  <div id="picker" class="overlay" hidden>
+    <div class="panel wide-card">
+      <div class="panel-head"><span class="numeral">◐</span><h2>Choose what to share</h2></div>
+      <div id="pickerGrid" class="picker-grid"></div>
+      <div class="row picker-foot">
+        <label class="check"><input type="checkbox" id="pickerAudio" checked><span>Share computer sound</span></label>
+        <button id="pickerCancel" class="btn ghost" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ended" class="overlay" hidden>
+    <div class="panel end-card">
+      <div class="medallion big" aria-hidden="true">SR</div>
+      <h2 id="endTitle" class="conn-title">Meeting ended</h2>
+      <p id="endText" class="conn-sub"></p>
+      <button id="retryBtn" class="btn gold" hidden>Try again</button>
+      <button id="homeBtn" class="btn ghost">Back to start</button>
+    </div>
+  </div>
+
+  <div id="toast" hidden></div>
+  <div id="audio" hidden></div>
+  <script src="bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+  "name": "streamroom",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Group video calls and 1080p60 screen sharing for up to 10 friends: a Windows desktop app with no accounts, no website and no server to pay for.",
+  "author": "Sanket Subhralok Mohapatra",
+  "license": "MIT",
+  "type": "module",
+  "main": "app/main.js",
+  "scripts": {
+    "build": "esbuild client/app.js --bundle --format=iife --target=es2020 --minify --sourcemap --outfile=public/bundle.js",
+    "app": "npm run build && electron .",
+    "start": "npm run build && node server.js",
+    "test": "node --test --test-concurrency=1 \"test/unit/*.test.js\"",
+    "test:e2e": "npm run build && node test/e2e/run.mjs",
+    "dist": "npm run build && electron-builder --win nsis",
+    "dist:portable": "npm run build && electron-builder --win dir"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "mediasoup": "^3.32.0",
+    "selfsigned": "^5.5.0",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "mediasoup-client": "^3.25.3",
+    "puppeteer-core": "^25.16.0",
+    "socket.io-client": "^4.8.4"
+  },
+  "build": {
+    "appId": "app.streamroom.desktop",
+    "productName": "StreamRoom",
+    "asar": false,
+    "files": [
+      "app/**",
+      "server/**",
+      "client/**",
+      "public/**",
+      "package.json",
+      "!public/bundle.js.map",
+      "!node_modules/mediasoup/worker/{fuzzer,include,mocks,pip_invoke,prebuild,scripts,src,subprojects,test,fbs}/**",
+      "!node_modules/mediasoup/worker/{Makefile,meson.build,meson_options.txt,tasks.py}"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "include": "build/installer.nsh",
+      "artifactName": "StreamRoom-Setup-${version}.exe"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableCookieEncryption": true
+    },
+    "electronLanguages": [
+      "en-US"
+    ]
+  }
+}

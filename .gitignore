@@ -1,0 +1,6 @@
+node_modules/
+certs/
+dist/
+public/bundle.js
+public/bundle.js.map
+*.log
